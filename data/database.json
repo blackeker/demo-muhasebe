@@ -1,5 +1,15 @@
 {
-  "customers": [],
+  "customers": [
+    {
+      "id": "cust-1791550130720",
+      "name": "Ahmet Kılıç",
+      "phone": "05555555555",
+      "notes": "",
+      "createdAt": "2026-10-09T12:48:50.720Z",
+      "sales": [],
+      "payments": []
+    }
+  ],
   "settings": {
     "businessName": "Muhasebe Demo",
     "currency": "₺",
