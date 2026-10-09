@@ -1,13 +1,71 @@
 {
   "customers": [
     {
+      "id": "cust-1791550545218",
+      "name": "Ayşe Kılıç",
+      "phone": "05545544343",
+      "notes": "",
+      "createdAt": "2026-10-09T12:55:45.218Z",
+      "sales": [],
+      "payments": []
+    },
+    {
       "id": "cust-1791550130720",
       "name": "Ahmet Kılıç",
       "phone": "05555555555",
       "notes": "",
       "createdAt": "2026-10-09T12:48:50.720Z",
-      "sales": [],
-      "payments": []
+      "sales": [
+        {
+          "id": "sale-1791550527130",
+          "date": "2026-10-09",
+          "description": "Demo Ürün",
+          "amount": 10000,
+          "installmentsCount": 4,
+          "installments": [
+            {
+              "id": "inst-1791550527130-1",
+              "no": 1,
+              "dueDate": "2026-10-09",
+              "amount": 2500,
+              "paid": 2500,
+              "paidDate": "2026-10-09"
+            },
+            {
+              "id": "inst-1791550527130-2",
+              "no": 2,
+              "dueDate": "2026-11-09",
+              "amount": 2500,
+              "paid": 0,
+              "paidDate": null
+            },
+            {
+              "id": "inst-1791550527130-3",
+              "no": 3,
+              "dueDate": "2026-12-09",
+              "amount": 2500,
+              "paid": 0,
+              "paidDate": null
+            },
+            {
+              "id": "inst-1791550527130-4",
+              "no": 4,
+              "dueDate": "2027-01-09",
+              "amount": 2500,
+              "paid": 0,
+              "paidDate": null
+            }
+          ]
+        }
+      ],
+      "payments": [
+        {
+          "id": "pay-1791550552056",
+          "date": "2026-10-09",
+          "amount": 2500,
+          "description": "Demo Ürün 1. Taksit Tahsilatı"
+        }
+      ]
     }
   ],
   "settings": {
