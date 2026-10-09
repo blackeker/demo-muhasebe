@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Muhasebe Demo - Ön Muhasebe & Taksit Takip</title>
+  <meta name="theme-color" content="#1e293b">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Üst Başlık & Menü -->
+  <header class="app-header">
+    <div class="header-content">
+      <div class="brand">
+        <h1>Muhasebe Demo</h1>
+      </div>
+      <nav class="nav-tabs">
+        <button class="nav-btn active" onclick="switchTab('customersTab')">
+          <span class="icon">👥</span> Müşteriler
+        </button>
+        <button class="nav-btn" onclick="switchTab('remindersTab')">
+          <span class="icon">⏰</span> Taksit Hatırlatıcı
+          <span id="dueBadge" class="badge">0</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('cloudTab')">
+          <span class="icon">☁️</span> Bulut & Yedek
+        </button>
+      </nav>
+      <div class="header-actions">
+        <span id="syncIndicator" class="sync-pill ok" title="Senkronizasyon Durumu">● Senkronize</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Ana İçerik Alanı -->
+  <main class="main-container">
+
+    <!-- SEKME 1: MÜŞTERİLER & CARİ HESAPLAR -->
+    <section id="customersTab" class="tab-content active">
+      <div class="layout-split">
+        
+        <!-- Sol Panel: Müşteri Listesi & Arama -->
+        <aside class="customer-sidebar">
+          <div class="sidebar-header">
+            <input type="text" id="customerSearch" placeholder="Müşteri ara..." oninput="filterCustomerList()">
+            <button class="btn btn-primary btn-sm" onclick="openModal('addCustomerModal')">+ Yeni Müşteri</button>
+          </div>
+          <div class="customer-list" id="customerListContainer">
+            <!-- Dinamik Müşteri Kartları -->
+          </div>
+        </aside>
+
+        <!-- Sağ Panel: Müşteri Detayı & İşlemler (Excel Görünümü) -->
+        <div class="customer-detail-panel" id="customerDetailView">
+          
+          <div class="detail-top-bar">
+            <div>
+              <h2 id="viewCustomerName" class="customer-title">-</h2>
+              <div class="customer-subinfo">
+                <span id="viewCustomerPhone" class="phone-tag">📞 -</span>
+                <button id="viewWhatsappBtn" class="btn btn-outline btn-xs" onclick="sendWhatsappToCustomer()">💬 WhatsApp</button>
+              </div>
+            </div>
+            <div class="customer-header-btns">
+              <button class="btn btn-sm btn-outline" onclick="openAddSaleModal()">+ Hizmet / Malzeme Ekle</button>
+              <button class="btn btn-sm btn-success" onclick="openAddPaymentModal()">+ Tahsilat Yap</button>
+              <button class="btn btn-sm btn-danger-outline" onclick="deleteCurrentCustomer()">🗑️ Sil</button>
+            </div>
+          </div>
+
+          <!-- 3 BÜYÜK ÖZET KUTUSU (EXCEL FORMATI) -->
+          <div class="summary-cards-grid">
+            <div class="summary-card card-total">
+              <div class="card-label">TOPLAM BORÇ</div>
+              <div class="card-value" id="boxTotalAmount">₺0</div>
+            </div>
+            <div class="summary-card card-collected">
+              <div class="card-label">TAHSİLAT</div>
+              <div class="card-value" id="boxTotalCollected">₺0</div>
+            </div>
+            <div class="summary-card card-remaining">
+              <div class="card-label">KALAN BAKİYE</div>
+              <div class="card-value" id="boxTotalRemaining">₺0</div>
+            </div>
+          </div>
+
+          <!-- İŞLEM TABLOLARI (SOL: ALINAN MALZEME/HİZMET - SAĞ: TAHSİLATLAR) -->
+          <div class="tables-grid">
+            
+            <!-- Hizmet / Alınan Malzeme Tablosu -->
+            <div class="table-card">
+              <div class="table-header">
+                <h3>📦 Verilen Hizmet / Alınan Malzeme</h3>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>Açıklama</th>
+                      <th>Taksit</th>
+                      <th>Tutar</th>
+                      <th>İşlem</th>
+                    </tr>
+                  </thead>
+                  <tbody id="salesTableBody">
+                    <tr><td colspan="5" class="empty-cell">Kayıt bulunamadı</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Tahsilat Tablosu -->
+            <div class="table-card">
+              <div class="table-header">
+                <h3>💰 Tahsilatlar (Ödemeler)</h3>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>Açıklama</th>
+                      <th>Tutar</th>
+                      <th>İşlem</th>
+                    </tr>
+                  </thead>
+                  <tbody id="paymentsTableBody">
+                    <tr><td colspan="4" class="empty-cell">Tahsilat bulunamadı</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- TAKSİT TAKİP VE HATIRLATMA TABLOSU -->
+          <div class="installments-section table-card">
+            <div class="table-header">
+              <h3>📅 Taksitlendirme & Ödeme Planı</h3>
+              <span class="badge-info">Otomatik Vade ve Hatırlatma</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Taksit No</th>
+                    <th>Vade Tarihi</th>
+                    <th>Tutar</th>
+                    <th>Durum</th>
+                    <th>İşlem / Hatırlatma</th>
+                  </tr>
+                </thead>
+                <tbody id="installmentsTableBody">
+                  <tr><td colspan="5" class="empty-cell">Taksit planı bulunmuyor</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SEKME 2: TAKSİT HATIRLATICI & VADE TAKİBİ -->
+    <section id="remindersTab" class="tab-content">
+      <div class="reminders-container">
+        <div class="section-title-box">
+          <h2>⏰ Taksit Hatırlatma ve Vade Takip Merkezi</h2>
+          <p>Vadesi gelen veya yaklaşan taksitleri tek tıkla WhatsApp veya telefon ile hatırlatabilirsiniz.</p>
+        </div>
+
+        <div class="reminders-stats">
+          <div class="stat-pill overdue">
+            <span class="count" id="statOverdueCount">0</span>
+            <span class="title">Vadesi Geçmiş Taksit</span>
+          </div>
+          <div class="stat-pill today">
+            <span class="count" id="statTodayCount">0</span>
+            <span class="title">Bugün Vadeli</span>
+          </div>
+          <div class="stat-pill upcoming">
+            <span class="count" id="statUpcomingCount">0</span>
+            <span class="title">Yaklaşan (7 Gün)</span>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Vadesi Bekleyen Tüm Taksitler</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Müşteri</th>
+                  <th>Telefon</th>
+                  <th>Taksit</th>
+                  <th>Vade Tarihi</th>
+                  <th>Tutar</th>
+                  <th>Kalan Gün</th>
+                  <th>Hızlı Hatırlat</th>
+                  <th>Tahsil Et</th>
+                </tr>
+              </thead>
+              <tbody id="allRemindersTableBody">
+                <!-- Dinamik Hatırlatma Satırları -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: YENİ MÜŞTERİ EKLE -->
+  <div id="addCustomerModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Yeni Müşteri Ekle</h3>
+        <button class="close-btn" onclick="closeModal('addCustomerModal')">&times;</button>
+      </div>
+      <form id="addCustomerForm" onsubmit="handleSaveCustomer(event)">
+        <div class="form-group">
+          <label>Müşteri Adı Soyadı / Firma Ünvanı *</label>
+          <input type="text" id="custNameInput" class="form-control" required placeholder="Örn: Ahmet Yılmaz">
+        </div>
+        <div class="form-group">
+          <label>Telefon Numarası (WhatsApp Hatırlatma İçin)</label>
+          <input type="tel" id="custPhoneInput" class="form-control" placeholder="Örn: 05551234567">
+        </div>
+        <div class="form-group">
+          <label>Açıklama / Not</label>
+          <input type="text" id="custNotesInput" class="form-control" placeholder="Opsiyonel">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('addCustomerModal')">İptal</button>
+          <button type="submit" class="btn btn-primary">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: VERİLEN HİZMET / ALINAN MALZEME & TAKSİTLENDİRME EKLE -->
+  <div id="addSaleModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Hizmet / Malzeme Girişi & Taksitlendirme</h3>
+        <button class="close-btn" onclick="closeModal('addSaleModal')">&times;</button>
+      </div>
+      <form id="addSaleForm" onsubmit="handleSaveSale(event)">
+        <div class="form-group">
+          <label>İşlem Tarihi *</label>
+          <input type="date" id="saleDateInput" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Aldığı Malzeme veya Verilen Hizmet Açıklaması *</label>
+          <input type="text" id="saleDescInput" class="form-control" required placeholder="Örn: Kombi Bakımı, Demir Malzeme, Nakliye...">
+        </div>
+        <div class="form-row">
+          <div class="form-group col">
+            <label>Hizmet Tutarı (₺) *</label>
+            <input type="number" step="0.01" id="saleAmountInput" class="form-control" required placeholder="0.00" oninput="calculateInstallmentPreview()">
+          </div>
+          <div class="form-group col">
+            <label>Taksit Sayısı</label>
+            <select id="saleInstallmentsCountInput" class="form-control" onchange="calculateInstallmentPreview()">
+              <option value="1">1 (Peşin / Tek Ödeme)</option>
+              <option value="2">2 Taksit</option>
+              <option value="3">3 Taksit</option>
+              <option value="4">4 Taksit</option>
+              <option value="5">5 Taksit</option>
+              <option value="6">6 Taksit</option>
+              <option value="9">9 Taksit</option>
+              <option value="12">12 Taksit</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>İlk Taksit / Vade Başlangıç Tarihi</label>
+          <input type="date" id="firstDueDateInput" class="form-control" onchange="calculateInstallmentPreview()">
+        </div>
+
+        <!-- Taksit Önizleme Kutusu -->
+        <div id="installmentPreviewBox" class="installment-preview-box">
+          <!-- Dinamik Taksit Önizlemesi -->
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('addSaleModal')">İptal</button>
+          <button type="submit" class="btn btn-primary">Kaydet & Taksitlendir</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: TAHSİLAT (ÖDEME) EKLE -->
+  <div id="addPaymentModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Tahsilat (Ödeme Alındı) Girişi</h3>
+        <button class="close-btn" onclick="closeModal('addPaymentModal')">&times;</button>
+      </div>
+      <form id="addPaymentForm" onsubmit="handleSavePayment(event)">
+        <div class="form-group">
+          <label>Tahsilat Tarihi *</label>
+          <input type="date" id="payDateInput" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Tahsil Edilen Tutar (₺) *</label>
+          <input type="number" step="0.01" id="payAmountInput" class="form-control" required placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label>Açıklama / Not</label>
+          <input type="text" id="payDescInput" class="form-control" placeholder="Örn: Nakit, Havale, 2. Taksit ödemesi">
+        </div>
+        <div class="form-group">
+          <label>Belirli Bir Taksite Bağla (Opsiyonel)</label>
+          <select id="payInstallmentSelect" class="form-control">
+            <option value="">-- Genel Tahsilat (Taksit Seçilmedi) --</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('addPaymentModal')">İptal</button>
+          <button type="submit" class="btn btn-success">Tahsilatı Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- QR Code Library for quick mobile pairing -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
